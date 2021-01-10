@@ -1,0 +1,283 @@
+
+<html>
+  <head>
+    <title>Tyrion</title>
+
+<meta charset="UTF-8">
+
+<script language=javascript>
+
+// Make some globals
+var c,ctx,buffer_c,buffer_ctx
+var backdrop_img, bomb_img, explode1_img, explode2_img, explode3_img, killer_img, missile_img, plane_img, sparkle_img, stuff_img;
+var wasd_img;
+var health_td, missiles_td, score_td;
+
+var scroll = 0;
+
+var game = {
+ state:0,
+ health:100,
+ missiles:3,
+ score:0,
+ player:{x:0,y:0},
+ enemies:[],
+ }
+
+// example:
+var enemy = { type:0,x:100,y:-30 } // TODO Rotation
+
+// Called when everythig is loaded.
+function bootGame()
+{
+  c = document.getElementById("myCanvas");
+  ctx = c.getContext("2d");
+  // Get images
+  backdrop_img = document.getElementById('backdrop-img');
+  bomb_img = document.getElementById('bomb-img');
+  explode1_img = document.getElementById('explode1-img');
+  explode2_img = document.getElementById('explode2-img');
+  explode3_img = document.getElementById('explode3-img');
+  killer_img = document.getElementById('killer-img');
+  missile_img = document.getElementById('missile-img');
+  plane_img = document.getElementById('plane-img');
+  sparkle_img = document.getElementById('sparkle-img');
+  stuff_img = document.getElementById('stuff-img');
+  wasd_img = document.getElementById('wasd-img');
+
+  buffer_c = document.createElement('canvas');
+  buffer_c.width = 300;
+  buffer_c.height = 300;
+  buffer_ctx = buffer_c.getContext('2d');
+  buffer_ctx.font="30px Arial";
+
+  health_td = document.getElementById('health_td');
+  missiles_td = document.getElementById('missiles_td');
+  score_td = document.getElementById('score_td');
+
+  setInterval(gameLoop,50)
+
+  
+}
+
+function gameLoop()
+{
+  processInput();
+  runGame();
+  drawStuff();
+}
+
+
+var enemy_speed = 5
+function moveEnemy(enemy,idx,enemies)
+{
+  enemies[idx].y += enemy_speed;
+         if ( enemy.type == 0 )
+         { 
+         enemies[idx].y += enemy_speed;
+       } else
+       {
+         if (enemy.x > game.player.x + enemy_speed)
+           enemies[idx].x -= enemy_speed;
+         else if (enemy.x < game.player.x - enemy_speed)
+           enemies[idx].x += enemy_speed;
+       } 
+}
+function getRandomInt(max) {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+function runGame()
+{
+  if (game.state != 1) {return;}
+
+  game.enemies.forEach(moveEnemy);
+  // Delete offscreen enemies
+  for (var i = 0 ; i < game.enemies.length ; i ++)
+  {
+    if (game.enemies[i].y > 300)
+    {
+      game.enemies.splice(i,1);
+      i--;
+      game.score += 5;
+    }
+  }
+
+
+  if ( game.enemies.length < 5)
+  {
+    enemy = {type:getRandomInt(2),
+             x: getRandomInt(270),
+             y: 0 - getRandomInt(50)};
+    game.enemies.push(enemy);
+    }
+
+  // TODO: Check collisions
+  // TODO: endgame on low health
+
+}
+
+// Needs work, can't hold keys down.
+// Apearantly I got to lesten for the keydown event,
+//  stash the key, and then don't remove it until key up
+var inputKey = 0;
+function storeInput(e)
+{
+  //console.log(e)
+  inputKey = e.keyCode;
+  // 32 = space
+  // 65 = a
+  // 83 = s
+  // 68 = d
+  // 87 = w
+}
+window.addEventListener("keydown",storeInput);
+
+function processInput()
+{
+  input = inputKey;
+  inputKey = 0;
+  if ( input == 0 ) { return;}
+
+  if ( game.state == 2 )
+  {
+    game.state = 0;
+  }
+
+  if ( game.state == 0 )
+  {
+    if ( input == 32 ) { newGame() }
+    return;
+  }
+
+  // Else game.state == 1
+  if (input == 65) { game.player.x -= 10 }
+  if (input == 83) { game.player.y += 10 }
+  if (input == 68) { game.player.x += 10 }
+  if (input == 87) { game.player.y -= 10 }
+  if (input == 32) { 
+    if ( game.missiles > 0)
+    {
+      game.missiles--;
+      // TODO: fireMissile()
+    }
+    }
+  // don't let the player fly out of bounds
+  if ( game.player.x < 0 ) game.player.x = 0;
+  if ( game.player.y < 0 ) game.player.y = 0;
+  if ( game.player.x > 270 ) game.player.x = 270;
+  if ( game.player.y > 270 ) game.player.y = 270;
+
+}
+
+function newGame()
+{
+  game.state = 1;
+  game.health = 100;
+  game.missiles = 3;
+  game.player.x = 150-15;
+  game.player.y = 270;
+
+  game.enemies = []
+}
+
+
+function drawEnemy(enemy)
+{
+         if ( enemy.type == 0 )
+         { buffer_ctx.drawImage(bomb_img,enemy.x,enemy.y);
+       } else
+       {
+       buffer_ctx.drawImage(killer_img,enemy.x,enemy.y);
+       } 
+}
+function drawStuff()
+{
+   
+  buffer_ctx.drawImage(backdrop_img,0,scroll-499);
+  buffer_ctx.drawImage(backdrop_img,0,scroll);
+  if ( game.state != 2 )
+  {
+    scroll=scroll>=499?scroll-499:scroll+2;
+  }
+
+  switch(game.state) {
+    case 0:
+    {
+      buffer_ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+      buffer_ctx.fillRect(0, 0, 300, 300);
+      buffer_ctx.fillStyle="#8FF";
+      buffer_ctx.fillText("You:",10,30);
+      buffer_ctx.drawImage(plane_img,150,5);
+      buffer_ctx.fillText("Bad:",10,80);
+      buffer_ctx.drawImage(killer_img,150,55);
+      buffer_ctx.drawImage(bomb_img,180,55);
+      buffer_ctx.fillText("Good:",10,130);
+      buffer_ctx.drawImage(stuff_img,150,105);
+      buffer_ctx.fillText("Controls:",10,180);
+      buffer_ctx.drawImage(wasd_img,150,155);
+      buffer_ctx.fillText("Space to Start",10,230);
+      buffer_ctx.fillText("or Shoot: ",10,280);
+      buffer_ctx.drawImage(missile_img,150,255);
+      break;
+      }
+    case 1:
+     { //TODO
+       buffer_ctx.drawImage(plane_img,game.player.x,game.player.y);
+       game.enemies.forEach(enemy => drawEnemy(enemy));
+     }
+     default: { // TODO 
+     }
+   }
+
+
+  ctx.drawImage(buffer_c, 0, 0)
+
+   health_td.innerHTML = game.health.toString()
+   missiles_td.innerHTML = game.missiles.toString()
+   score_td.innerHTML = game.score.toString()
+
+}
+
+</script>
+<style>
+
+.vertical-center {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+</style>
+  </head>
+
+<body bgcolor="#000" text="#8FF" onload="bootGame()">
+<div=width=100% height=100% name=container>
+<center>
+<div class="verticle-center">
+<p>Tyrion</p>
+<!-- I wonder if I could scale this for a pixelated game on todays larger
+     monitors... -->
+<canvas width=300px height=300px id=myCanvas bgcolor=#FFF>
+</canvas>
+<p><table>
+<tr> <td>Health: </td><td id=health_td width=10 align=right>100</td></tr>
+<tr><td>Missiles:</td><td id=missiles_td        align=right>3</td></tr>
+<tr><td>Score:   </td><td id=score_td           align=right>----------</td></tr>
+</table>
+
+<img src='Images/backdrop.gif' id='backdrop-img' style="display: none;" />
+<img src='Images/Bomb.gif'     id='bomb-img' style="display: none;" />
+<img src='Images/explode1.gif' id='explode1-img' style="display: none;" />
+<img src='Images/explode2.gif' id='explode2-img' style="display: none;" />
+<img src='Images/explode3.gif' id='explode3-img' style="display: none;" />
+<img src='Images/killer.gif'   id='killer-img' style="display: none;" />
+<img src='Images/Missile.gif'  id='missile-img' style="display: none;" />
+<img src='Images/plane.gif'    id='plane-img' style="display: none;" />
+<img src='Images/sparkle.gif'  id='sparkle-img' style="display: none;" />
+<img src='Images/stuff.gif'    id='stuff-img' style="display: none;" />
+
+<img src='Images/wasd.gif'    id='wasd-img' height=30 width=30 style="display: none;" />
+</body>
+</html>
+
