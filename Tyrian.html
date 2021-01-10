@@ -5,6 +5,9 @@
 
 <meta charset="UTF-8">
 
+<!-- also TODO for phone controls: set the predicted width to 300 (like vote bugger) -->
+<meta name=viewport content='width=300'>
+
 <script language=javascript>
 
 // Make some globals
@@ -103,11 +106,11 @@ function runGame()
   }
 
 
-  if ( game.enemies.length < 5)
+  if ( game.enemies.length < Math.log10(game.score + 2) )
   {
     enemy = {type:getRandomInt(2),
              x: getRandomInt(270),
-             y: 0 - getRandomInt(50)};
+             y: -50};
     game.enemies.push(enemy);
     }
 
