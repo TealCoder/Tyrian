@@ -88,15 +88,28 @@ function moveEnemy(enemy,idx,enemies)
        } 
 }
 function checkColision(enemy,idx,enemies) {
-  enemies[idx].y += enemy_speed;
-       if ( enemy.type == 0 ) { 
-         if (player.x - 10 > enemy.x - 10 && ) // TODO
-             
-         {
-
-       } else
-       {
-       } 
+  if ( enemy.type == 0 ) { 
+   if (game.player.x + 10 > enemy.x  && 
+       game.player.x - 10 < enemy.x  &&
+       game.player.y + 20 > enemy.y  &&
+       game.player.y - 20 < enemy.y ) // TODO
+   {
+       game.health -= 10;
+       // TODO: blow up enemy in art and make disapear/non-damaging
+       buffer_ctx.drawImage(explode3_img,enemy.x,enemy.y)
+   }
+  } else
+  {
+   if (game.player.x + 15 > enemy.x  && 
+       game.player.x - 15 < enemy.x  &&
+       game.player.y + 20 > enemy.y  &&
+       game.player.y - 20 < enemy.y ) // TODO
+   {
+       // TODO: blow up enemy in art and make disapear/non-damaging
+       game.health -= 5;
+       buffer_ctx.drawImage(explode3_img,enemy.x,enemy.y)
+   }
+  } 
 }
 function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
@@ -127,8 +140,11 @@ function runGame()
     game.enemies.push(enemy);
     }
 
-  // TODO: Check collisions
   // TODO: endgame on low health
+  if ( game.health <= 0 )
+  {
+    game.state=2;
+  }
 
 }
 
@@ -217,7 +233,6 @@ function drawEnemy(enemy)
 }
 function drawStuff()
 {
-   
   buffer_ctx.drawImage(backdrop_img,0,scroll-499);
   buffer_ctx.drawImage(backdrop_img,0,scroll);
   if ( game.state != 2 )
@@ -249,8 +264,15 @@ function drawStuff()
      { //TODO
        buffer_ctx.drawImage(plane_img,game.player.x,game.player.y);
        game.enemies.forEach(enemy => drawEnemy(enemy));
+       break;
      }
-     default: { // TODO 
+    case 2:
+     { //TODO
+       buffer_ctx.drawImage(explode2_img,game.player.x,game.player.y);
+       game.enemies.forEach(enemy => drawEnemy(enemy));
+       break;
+     }
+     default: { // UH OH 
      }
    }
 
@@ -273,6 +295,7 @@ function mouseDown(e)
   mouseIsDown = true;
   mousePos = {x:e.offsetX, y:e.offsetY};
   if (game.state == 0) { newGame(); }
+  if (game.state == 2) { game.state=0; }
 }
 
 function mouseMove(e)
