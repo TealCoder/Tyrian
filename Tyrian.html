@@ -17,6 +17,7 @@ var wasd_img;
 var health_td, missiles_td, score_td;
 
 var scroll = 0;
+var mouseIsDown = false;
 
 var game = {
  state:0,
@@ -86,6 +87,17 @@ function moveEnemy(enemy,idx,enemies)
            enemies[idx].x += enemy_speed;
        } 
 }
+function checkColision(enemy,idx,enemies) {
+  enemies[idx].y += enemy_speed;
+       if ( enemy.type == 0 ) { 
+         if (player.x - 10 > enemy.x - 10 && ) // TODO
+             
+         {
+
+       } else
+       {
+       } 
+}
 function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
@@ -94,6 +106,7 @@ function runGame()
   if (game.state != 1) {return;}
 
   game.enemies.forEach(moveEnemy);
+  game.enemies.forEach(checkColision);
   // Delete offscreen enemies
   for (var i = 0 ; i < game.enemies.length ; i ++)
   {
@@ -137,6 +150,15 @@ window.addEventListener("keydown",storeInput);
 
 function processInput()
 {
+
+  if (game.state == 1 && mouseIsDown )
+  {
+    if (mousePos.x > game.player.x) game.player.x += 10;
+    if (mousePos.y > game.player.y) game.player.y += 10;
+    if (mousePos.x < game.player.x) game.player.x -= 10;
+    if (mousePos.y < game.player.y) game.player.y -= 10;
+  }
+
   input = inputKey;
   inputKey = 0;
   if ( input == 0 ) { return;}
@@ -186,8 +208,8 @@ function newGame()
 
 function drawEnemy(enemy)
 {
-         if ( enemy.type == 0 )
-         { buffer_ctx.drawImage(bomb_img,enemy.x,enemy.y);
+       if ( enemy.type == 0 )
+       { buffer_ctx.drawImage(bomb_img,enemy.x,enemy.y);
        } else
        {
        buffer_ctx.drawImage(killer_img,enemy.x,enemy.y);
@@ -241,6 +263,23 @@ function drawStuff()
 
 }
 
+function mouseUp(e)
+{
+  mouseIsDown = false;
+}
+
+function mouseDown(e)
+{
+  mouseIsDown = true;
+  mousePos = {x:e.offsetX, y:e.offsetY};
+  if (game.state == 0) { newGame(); }
+}
+
+function mouseMove(e)
+{
+  mousePos = {x:e.offsetX, y:e.offsetY};
+}
+
 </script>
 <style>
 
@@ -252,7 +291,7 @@ function drawStuff()
   transform: translateY(-50%);
 }
 </style>
-  </head>
+</head>
 
 <body bgcolor="#000" text="#8FF" onload="bootGame()">
 <div=width=100% height=100% name=container>
@@ -261,7 +300,8 @@ function drawStuff()
 <p>Tyrion</p>
 <!-- I wonder if I could scale this for a pixelated game on todays larger
      monitors... -->
-<canvas width=300px height=300px id=myCanvas bgcolor=#FFF>
+<canvas width=300px height=300px id=myCanvas bgcolor=#FFF 
+  onmousedown="mouseDown(event)" onmouseup="mouseUp(event)" onmousemove="mouseMove(event)" >
 </canvas>
 <p><table>
 <tr> <td>Health: </td><td id=health_td width=10 align=right>100</td></tr>
