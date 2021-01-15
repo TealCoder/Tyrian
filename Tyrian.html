@@ -26,10 +26,12 @@ var game = {
  score:0,
  player:{x:0,y:0},
  enemies:[],
+ tempSprites:[] 
  }
 
 // example:
 var enemy = { type:0,x:100,y:-30 } // TODO Rotation
+var sprite = { img:sparkle_img,x:100,y:-30,life:3 }
 
 // Called when everythig is loaded.
 function bootGame()
@@ -39,9 +41,9 @@ function bootGame()
   // Get images
   backdrop_img = document.getElementById('backdrop-img');
   bomb_img = document.getElementById('bomb-img');
-  explode1_img = document.getElementById('explode1-img');
-  explode2_img = document.getElementById('explode2-img');
-  explode3_img = document.getElementById('explode3-img');
+  explode1_img = document.getElementById('explode3-img');
+  explode2_img = document.getElementById('explode1-img');
+  explode3_img = document.getElementById('explode2-img');
   killer_img = document.getElementById('killer-img');
   missile_img = document.getElementById('missile-img');
   plane_img = document.getElementById('plane-img');
@@ -53,14 +55,12 @@ function bootGame()
   buffer_c.width = 300;
   buffer_c.height = 300;
   buffer_ctx = buffer_c.getContext('2d');
-  buffer_ctx.font="30px Arial";
 
   health_td = document.getElementById('health_td');
   missiles_td = document.getElementById('missiles_td');
   score_td = document.getElementById('score_td');
 
   setInterval(gameLoop,50)
-
   
 }
 
@@ -87,7 +87,7 @@ function moveEnemy(enemy,idx,enemies)
            enemies[idx].x += enemy_speed;
        } 
 }
-function checkColision(enemy,idx,enemies) {
+function checkCollision(enemy,idx,enemies) {
   if ( enemy.type == 0 ) { 
    if (game.player.x + 10 > enemy.x  && 
        game.player.x - 10 < enemy.x  &&
@@ -119,7 +119,7 @@ function runGame()
   if (game.state != 1) {return;}
 
   game.enemies.forEach(moveEnemy);
-  game.enemies.forEach(checkColision);
+  game.enemies.forEach(checkCollision);
   // Delete offscreen enemies
   for (var i = 0 ; i < game.enemies.length ; i ++)
   {
@@ -195,19 +195,21 @@ function processInput()
   if (input == 83) { game.player.y += 10 }
   if (input == 68) { game.player.x += 10 }
   if (input == 87) { game.player.y -= 10 }
-  if (input == 32) { 
-    if ( game.missiles > 0)
-    {
-      game.missiles--;
-      // TODO: fireMissile()
-    }
-    }
+  if (input == 32) { fireMissile() }
+
   // don't let the player fly out of bounds
   if ( game.player.x < 0 ) game.player.x = 0;
   if ( game.player.y < 0 ) game.player.y = 0;
   if ( game.player.x > 270 ) game.player.x = 270;
   if ( game.player.y > 270 ) game.player.y = 270;
 
+}
+
+function fireMissile()
+{
+ if (game.missiles <= 0) return;
+ game.missiles -= 1;
+ console.log("fireMissile: TODO!");
 }
 
 function newGame()
@@ -243,6 +245,7 @@ function drawStuff()
   switch(game.state) {
     case 0:
     {
+      buffer_ctx.font="30px Arial";
       buffer_ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
       buffer_ctx.fillRect(0, 0, 300, 300);
       buffer_ctx.fillStyle="#8FF";
@@ -270,6 +273,13 @@ function drawStuff()
      { //TODO
        buffer_ctx.drawImage(explode2_img,game.player.x,game.player.y);
        game.enemies.forEach(enemy => drawEnemy(enemy));
+       buffer_ctx.font="45px Arial";
+       buffer_ctx.fillStyle="#800";
+       buffer_ctx.fillText("Game Over",10,100);
+       buffer_ctx.fillText("Score:"+game.score,10,160);
+       buffer_ctx.font="30px Arial";
+       buffer_ctx.fillStyle="#8FF";
+       buffer_ctx.fillText("Anything to Restart",10, 220);
        break;
      }
      default: { // UH OH 
@@ -288,6 +298,7 @@ function drawStuff()
 function mouseUp(e)
 {
   mouseIsDown = false;
+  fireMissile();
 }
 
 function mouseDown(e)
@@ -319,18 +330,33 @@ function mouseMove(e)
 <body bgcolor="#000" text="#8FF" onload="bootGame()">
 <div=width=100% height=100% name=container>
 <center>
-<div class="verticle-center">
-<p>Tyrion</p>
-<!-- I wonder if I could scale this for a pixelated game on todays larger
-     monitors... -->
-<canvas width=300px height=300px id=myCanvas bgcolor=#FFF 
-  onmousedown="mouseDown(event)" onmouseup="mouseUp(event)" onmousemove="mouseMove(event)" >
-</canvas>
-<p><table>
+<table class="verticle-center"><tr><td>
+<p><b>Fighter Jet Game</b></p>
+<p align=center><table>
 <tr> <td>Health: </td><td id=health_td width=10 align=right>100</td></tr>
 <tr><td>Missiles:</td><td id=missiles_td        align=right>3</td></tr>
 <tr><td>Score:   </td><td id=score_td           align=right>----------</td></tr>
-</table>
+</table></p>
+</td></tr><tr><td>
+<!-- I wonder if I could scale this for a pixelated game on todays larger
+     monitors... -->
+<p><canvas width=300px height=300px id=myCanvas bgcolor=#FFF 
+  touchstart= "mouseDown(event)" 
+  touchend=   "mouseUp(event)" 
+  touchmove=  "mouseMove(event)" 
+  onmousedown="mouseDown(event)" 
+  onmouseup=  "mouseUp(event)" 
+  onmousemove="mouseMove(event)" 
+  >
+</canvas></p>
+
+</td></tr><tr><td>
+<p>
+Touch to Fly<br>
+Lift to launch missile.<br>
+</p>
+</td></tr></table>
+</div> <!-- whole container -->
 
 <img src='Images/backdrop.gif' id='backdrop-img' style="display: none;" />
 <img src='Images/Bomb.gif'     id='bomb-img' style="display: none;" />
