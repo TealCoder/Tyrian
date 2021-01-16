@@ -61,9 +61,10 @@ function bootGame()
   score_td = document.getElementById('score_td');
 
   el = c;
-  el.addEventListener("touchstart", mouseDown, false);
-  el.addEventListener("touchend", mouseUp, false);
-  el.addEventListener("touchmove", mouseMove, false);
+  el.addEventListener("touchstart",  handleStart,  false);
+  el.addEventListener("touchend",    handleEnd,    false);
+  el.addEventListener("touchcancel", handleCancel, false);
+  el.addEventListener("touchmove",   handleMove,   false);
 
   setInterval(gameLoop,50)
 
@@ -224,7 +225,7 @@ function fireMissile()
 {
   if (game.missiles <= 0) return;
   game.missiles -= 1;
-  console.log("fireMissile: TODO!");
+  log("fireMissile: TODO!");
 }
 
 function newGame()
@@ -325,6 +326,7 @@ function mouseUp(e)
 {
   mouseIsDown = false;
   fireMissile();
+  //log("mouseUp<br>");
 }
 
 function mouseDown(e)
@@ -333,11 +335,55 @@ function mouseDown(e)
   mousePos = {x:e.offsetX, y:e.offsetY};
   if (game.state == 0) { newGame(); }
   if (game.state == 2) { game.state=0; }
+  //log("mouseDown<br>");
 }
 
 function mouseMove(e)
 {
   mousePos = {x:e.offsetX, y:e.offsetY};
+  //log("mouseMove<br>");
+}
+
+// And more TOUCH EXPERIMENTS ----------------------
+
+function handleStart(evt) {
+  evt.preventDefault();
+  var touches = evt.changedTouches;
+  var touch = touches[0]; // only use 1
+  mouseIsDown = true;
+  positionTouch(touch.pageX,touch.pageY);
+  //log("handleStart("+mousePos.x+","+mousePos.y+")");
+
+  if (game.state == 0) { newGame(); }
+  if (game.state == 2) { game.state=0; }
+}
+function handleMove(evt) {
+  evt.preventDefault();
+  var touches = evt.changedTouches;
+  var touch = touches[0]; // only use 1
+  positionTouch(touch.pageX,touch.pageY);
+  //log("handleMove("+mousePos.x+","+mousePos.y+")");
+}
+function handleEnd(evt) {
+  evt.preventDefault();
+  var touches = evt.changedTouches;
+  var touch = touches[0]; // only use 1
+  positionTouch(touch.pageX,touch.pageY);
+  mouseIsDown = false;
+  //log("handleEnd("+mousePos.x+","+mousePos.y+")");
+}
+function handleCancel(evt) {
+  evt.preventDefault();
+  //log("handleCancel");
+}
+function log(msg) {
+  var p = document.getElementById('log');
+  p.innerHTML = msg + "\n" + p.innerHTML;
+}
+function positionTouch(x,y)
+{
+  var BB=c.getBoundingClientRect();
+  mousePos = {x:x-BB.left, y:y-BB.top}
 }
 
 </script>
@@ -367,9 +413,6 @@ function mouseMove(e)
 <!-- I wonder if I could scale this for a pixelated game on todays larger
      monitors... -->
 <p><canvas width=300px height=300px id=myCanvas bgcolor=#FFF 
-  touchstart= "mouseDown(event)" 
-  touchend=   "mouseUp(event)" 
-  touchmove=  "mouseMove(event)" 
   onmousedown="mouseDown(event)" 
   onmouseup=  "mouseUp(event)" 
   onmousemove="mouseMove(event)" 
@@ -381,6 +424,8 @@ function mouseMove(e)
 Touch to Fly<br>
 Lift to launch missile.<br>
 </p>
+
+<pre text=#fff id=log>Log:<br></pre>
 </td></tr></table>
 </div> <!-- whole container -->
 
