@@ -22,16 +22,17 @@ var mouseIsDown = false;
 var game = {
 state:0,
       health:100,
-      missiles:3,
+      stored_missiles:3,
       score:0,
       player:{x:0,y:0},
       enemies:[],
-      tempSprites:[] 
+      missiles:[],
+      bonus:{x:500,y:500}
 }
 
 // example:
 var enemy = { type:0,x:100,y:-30,dead:0 } 
-var sprite = { img:sparkle_img,x:100,y:-30,life:3 }
+var missile = { x:100,y:-30,dead:0 } 
 
 // Called when everythig is loaded.
 function bootGame()
@@ -77,6 +78,11 @@ function gameLoop()
   drawStuff();
 }
 
+var missile_speed = 5;
+function moveMissile(missile,idx,missiles)
+{
+  missiles[idx].y -= missile_speed;
+}
 
 var enemy_speed = 5;
 function moveEnemy(enemy,idx,enemies)
@@ -95,12 +101,16 @@ function moveEnemy(enemy,idx,enemies)
   } 
 }
 function checkCollision(enemy,idx,enemies) {
+  // Nothing collides with dead enemies
   if (enemy.dead > 0) { return; }
+
+  // Enemies collide with player
+  // Using different hitboxes and damage.
   if ( enemy.type == 0 ) { 
     if (game.player.x + 10 > enemy.x  && 
         game.player.x - 10 < enemy.x  &&
         game.player.y + 20 > enemy.y  &&
-        game.player.y - 20 < enemy.y ) // TODO
+        game.player.y - 20 < enemy.y )
     {
       game.health -= 50;
       enemy.dead = 1;
@@ -111,13 +121,28 @@ function checkCollision(enemy,idx,enemies) {
     if (game.player.x + 15 > enemy.x  && 
         game.player.x - 15 < enemy.x  &&
         game.player.y + 20 > enemy.y  &&
-        game.player.y - 20 < enemy.y ) // TODO
+        game.player.y - 20 < enemy.y ) 
     {
       game.health -= 25;
       enemy.dead = 1;
       game.score += 5;
     }
   } 
+
+  // Enemies Collide with missiles
+  for (missile_idx = 0 ; missile_idx < game.missiles.length; missile_idx++)
+  {
+    missile = game.missiles[missile_idx];
+    if (missile.x + 15 > enemy.x  && 
+        missile.x - 15 < enemy.x  &&
+        missile.y + 20 > enemy.y  &&
+        missile.y - 20 < enemy.y )
+    {
+      enemy.dead   = 1;
+      missile.dead = 1
+      game.score += 100;
+    }
+  }
 }
 function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
@@ -144,7 +169,18 @@ function runGame()
       game.enemies[i].dead++;
     }
   }
-  // Check for collision after dealing with explosions.
+
+  game.missiles.forEach(moveMissile);
+  for (var i = 0 ; i < game.missiles.length ; i ++)
+  {
+    if (game.missiles[i].dead == 1)
+    {
+      game.missiles.splice(i,1);
+      i--;
+    }
+  }
+
+  // Check for collision after dealing with movement.
   game.enemies.forEach(checkCollision);
 
   // Create new enemies
@@ -223,16 +259,16 @@ function processInput()
 
 function fireMissile()
 {
-  if (game.missiles <= 0) return;
-  game.missiles -= 1;
-  log("fireMissile: TODO!");
+  if (game.stored_missiles <= 0) return;
+  game.stored_missiles -= 1;
+  game.missiles.push({x:game.player.x,y:game.player.y-30,dead:0});
 }
 
 function newGame()
 {
   game.state = 1;
   game.health = 100;
-  game.missiles = 3;
+  game.stored_missiles = 3;
   game.player.x = 150-15;
   game.player.y = 270;
 
@@ -294,6 +330,7 @@ function drawStuff()
       { 
         buffer_ctx.drawImage(plane_img,game.player.x,game.player.y);
         game.enemies.forEach(enemy => drawEnemy(enemy));
+        game.missiles.forEach(missile => buffer_ctx.drawImage(missile_img,missile.x,missile.y));
         break;
       }
     case 2:
@@ -306,7 +343,7 @@ function drawStuff()
         buffer_ctx.fillText("Score:"+game.score,10,160);
         buffer_ctx.font="30px Arial";
         buffer_ctx.fillStyle="#8FF";
-        buffer_ctx.fillText("Anything to Restart",10, 220);
+        buffer_ctx.fillText("Touch to Restart",10, 220);
         break;
       }
     default: { // UH OH 
@@ -317,7 +354,7 @@ function drawStuff()
   ctx.drawImage(buffer_c, 0, 0)
 
     health_td.innerHTML = game.health.toString()
-    missiles_td.innerHTML = game.missiles.toString()
+    missiles_td.innerHTML = game.stored_missiles.toString()
     score_td.innerHTML = game.score.toString()
 
 }
@@ -370,6 +407,7 @@ function handleEnd(evt) {
   var touch = touches[0]; // only use 1
   positionTouch(touch.pageX,touch.pageY);
   mouseIsDown = false;
+  fireMissile();
   //log("handleEnd("+mousePos.x+","+mousePos.y+")");
 }
 function handleCancel(evt) {
