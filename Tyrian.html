@@ -20,17 +20,17 @@ var scroll = 0;
 var mouseIsDown = false;
 
 var game = {
- state:0,
- health:100,
- missiles:3,
- score:0,
- player:{x:0,y:0},
- enemies:[],
- tempSprites:[] 
- }
+state:0,
+      health:100,
+      missiles:3,
+      score:0,
+      player:{x:0,y:0},
+      enemies:[],
+      tempSprites:[] 
+}
 
 // example:
-var enemy = { type:0,x:100,y:-30 } // TODO Rotation
+var enemy = { type:0,x:100,y:-30,dead:0 } 
 var sprite = { img:sparkle_img,x:100,y:-30,life:3 }
 
 // Called when everythig is loaded.
@@ -60,8 +60,13 @@ function bootGame()
   missiles_td = document.getElementById('missiles_td');
   score_td = document.getElementById('score_td');
 
+  el = c;
+  el.addEventListener("touchstart", mouseDown, false);
+  el.addEventListener("touchend", mouseUp, false);
+  el.addEventListener("touchmove", mouseMove, false);
+
   setInterval(gameLoop,50)
-  
+
 }
 
 function gameLoop()
@@ -72,43 +77,45 @@ function gameLoop()
 }
 
 
-var enemy_speed = 5
+var enemy_speed = 5;
 function moveEnemy(enemy,idx,enemies)
 {
   enemies[idx].y += enemy_speed;
-         if ( enemy.type == 0 )
-         { 
-         enemies[idx].y += enemy_speed;
-       } else
-       {
-         if (enemy.x > game.player.x + enemy_speed)
-           enemies[idx].x -= enemy_speed;
-         else if (enemy.x < game.player.x - enemy_speed)
-           enemies[idx].x += enemy_speed;
-       } 
-}
-function checkCollision(enemy,idx,enemies) {
-  if ( enemy.type == 0 ) { 
-   if (game.player.x + 10 > enemy.x  && 
-       game.player.x - 10 < enemy.x  &&
-       game.player.y + 20 > enemy.y  &&
-       game.player.y - 20 < enemy.y ) // TODO
-   {
-       game.health -= 10;
-       // TODO: blow up enemy in art and make disapear/non-damaging
-       buffer_ctx.drawImage(explode3_img,enemy.x,enemy.y)
-   }
+  if (enemy.dead > 0 ) { return; }
+  if ( enemy.type == 0 )
+  { 
+    enemies[idx].y += enemy_speed;
   } else
   {
-   if (game.player.x + 15 > enemy.x  && 
-       game.player.x - 15 < enemy.x  &&
-       game.player.y + 20 > enemy.y  &&
-       game.player.y - 20 < enemy.y ) // TODO
-   {
-       // TODO: blow up enemy in art and make disapear/non-damaging
-       game.health -= 5;
-       buffer_ctx.drawImage(explode3_img,enemy.x,enemy.y)
-   }
+    if (enemy.x > game.player.x + enemy_speed)
+      enemies[idx].x -= enemy_speed;
+    else if (enemy.x < game.player.x - enemy_speed)
+      enemies[idx].x += enemy_speed;
+  } 
+}
+function checkCollision(enemy,idx,enemies) {
+  if (enemy.dead > 0) { return; }
+  if ( enemy.type == 0 ) { 
+    if (game.player.x + 10 > enemy.x  && 
+        game.player.x - 10 < enemy.x  &&
+        game.player.y + 20 > enemy.y  &&
+        game.player.y - 20 < enemy.y ) // TODO
+    {
+      game.health -= 50;
+      enemy.dead = 1;
+      game.score += 5;
+    }
+  } else
+  {
+    if (game.player.x + 15 > enemy.x  && 
+        game.player.x - 15 < enemy.x  &&
+        game.player.y + 20 > enemy.y  &&
+        game.player.y - 20 < enemy.y ) // TODO
+    {
+      game.health -= 25;
+      enemy.dead = 1;
+      game.score += 5;
+    }
   } 
 }
 function getRandomInt(max) {
@@ -119,28 +126,36 @@ function runGame()
   if (game.state != 1) {return;}
 
   game.enemies.forEach(moveEnemy);
-  game.enemies.forEach(checkCollision);
-  // Delete offscreen enemies
   for (var i = 0 ; i < game.enemies.length ; i ++)
   {
-    if (game.enemies[i].y > 300)
+    // Delete offscreen/dead enemies
+    if (game.enemies[i].y > 300 || 
+        game.enemies[i].dead > 12)
     {
       game.enemies.splice(i,1);
       i--;
       game.score += 5;
+      continue;
+    }
+    // Animate the explosion
+    if ( game.enemies[i].dead > 0 )
+    {
+      game.enemies[i].dead++;
     }
   }
+  // Check for collision after dealing with explosions.
+  game.enemies.forEach(checkCollision);
 
-
+  // Create new enemies
   if ( game.enemies.length < Math.log10(game.score + 2) )
   {
     enemy = {type:getRandomInt(2),
-             x: getRandomInt(270),
-             y: -50};
+      x: getRandomInt(270),
+      y: -50,
+      dead:0 };
     game.enemies.push(enemy);
-    }
+  }
 
-  // TODO: endgame on low health
   if ( game.health <= 0 )
   {
     game.state=2;
@@ -207,9 +222,9 @@ function processInput()
 
 function fireMissile()
 {
- if (game.missiles <= 0) return;
- game.missiles -= 1;
- console.log("fireMissile: TODO!");
+  if (game.missiles <= 0) return;
+  game.missiles -= 1;
+  console.log("fireMissile: TODO!");
 }
 
 function newGame()
@@ -226,12 +241,23 @@ function newGame()
 
 function drawEnemy(enemy)
 {
-       if ( enemy.type == 0 )
-       { buffer_ctx.drawImage(bomb_img,enemy.x,enemy.y);
-       } else
-       {
-       buffer_ctx.drawImage(killer_img,enemy.x,enemy.y);
-       } 
+  if (enemy.dead > 0) 
+  {
+    if (enemy.dead < 4) 
+      buffer_ctx.drawImage(explode1_img,enemy.x,enemy.y);
+    else if (enemy.dead < 8 ) 
+      buffer_ctx.drawImage(explode2_img,enemy.x,enemy.y);
+    else  
+      buffer_ctx.drawImage(explode3_img,enemy.x,enemy.y);
+    return;
+  }
+
+  if ( enemy.type == 0 )
+  { buffer_ctx.drawImage(bomb_img,enemy.x,enemy.y);
+  } else
+  {
+    buffer_ctx.drawImage(killer_img,enemy.x,enemy.y);
+  } 
 }
 function drawStuff()
 {
@@ -244,54 +270,54 @@ function drawStuff()
 
   switch(game.state) {
     case 0:
-    {
-      buffer_ctx.font="30px Arial";
-      buffer_ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-      buffer_ctx.fillRect(0, 0, 300, 300);
-      buffer_ctx.fillStyle="#8FF";
-      buffer_ctx.fillText("You:",10,30);
-      buffer_ctx.drawImage(plane_img,150,5);
-      buffer_ctx.fillText("Bad:",10,80);
-      buffer_ctx.drawImage(killer_img,150,55);
-      buffer_ctx.drawImage(bomb_img,180,55);
-      buffer_ctx.fillText("Good:",10,130);
-      buffer_ctx.drawImage(stuff_img,150,105);
-      buffer_ctx.fillText("Controls:",10,180);
-      buffer_ctx.drawImage(wasd_img,150,155);
-      buffer_ctx.fillText("Space to Start",10,230);
-      buffer_ctx.fillText("or Shoot: ",10,280);
-      buffer_ctx.drawImage(missile_img,150,255);
-      break;
+      {
+        buffer_ctx.font="30px Arial";
+        buffer_ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        buffer_ctx.fillRect(0, 0, 300, 300);
+        buffer_ctx.fillStyle="#8FF";
+        buffer_ctx.fillText("You:",10,30);
+        buffer_ctx.drawImage(plane_img,150,5);
+        buffer_ctx.fillText("Bad:",10,80);
+        buffer_ctx.drawImage(killer_img,150,55);
+        buffer_ctx.drawImage(bomb_img,180,55);
+        buffer_ctx.fillText("Good:",10,130);
+        buffer_ctx.drawImage(stuff_img,150,105);
+        buffer_ctx.fillText("Controls:",10,180);
+        buffer_ctx.drawImage(wasd_img,150,155);
+        buffer_ctx.fillText("Space to Start",10,230);
+        buffer_ctx.fillText("or Shoot: ",10,280);
+        buffer_ctx.drawImage(missile_img,150,255);
+        break;
       }
     case 1:
-     { //TODO
-       buffer_ctx.drawImage(plane_img,game.player.x,game.player.y);
-       game.enemies.forEach(enemy => drawEnemy(enemy));
-       break;
-     }
+      { 
+        buffer_ctx.drawImage(plane_img,game.player.x,game.player.y);
+        game.enemies.forEach(enemy => drawEnemy(enemy));
+        break;
+      }
     case 2:
-     { //TODO
-       buffer_ctx.drawImage(explode2_img,game.player.x,game.player.y);
-       game.enemies.forEach(enemy => drawEnemy(enemy));
-       buffer_ctx.font="45px Arial";
-       buffer_ctx.fillStyle="#800";
-       buffer_ctx.fillText("Game Over",10,100);
-       buffer_ctx.fillText("Score:"+game.score,10,160);
-       buffer_ctx.font="30px Arial";
-       buffer_ctx.fillStyle="#8FF";
-       buffer_ctx.fillText("Anything to Restart",10, 220);
-       break;
-     }
-     default: { // UH OH 
-     }
-   }
+      { 
+        buffer_ctx.drawImage(explode2_img,game.player.x,game.player.y);
+        game.enemies.forEach(enemy => drawEnemy(enemy));
+        buffer_ctx.font="45px Arial";
+        buffer_ctx.fillStyle="#800";
+        buffer_ctx.fillText("Game Over",10,100);
+        buffer_ctx.fillText("Score:"+game.score,10,160);
+        buffer_ctx.font="30px Arial";
+        buffer_ctx.fillStyle="#8FF";
+        buffer_ctx.fillText("Anything to Restart",10, 220);
+        break;
+      }
+    default: { // UH OH 
+             }
+  }
 
 
   ctx.drawImage(buffer_c, 0, 0)
 
-   health_td.innerHTML = game.health.toString()
-   missiles_td.innerHTML = game.missiles.toString()
-   score_td.innerHTML = game.score.toString()
+    health_td.innerHTML = game.health.toString()
+    missiles_td.innerHTML = game.missiles.toString()
+    score_td.innerHTML = game.score.toString()
 
 }
 
