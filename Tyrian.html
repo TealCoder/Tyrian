@@ -184,17 +184,12 @@ function runGame()
   }
 
   if (game.bonus.dead == 0)
+  {
     game.bonus.y += enemy_speed;
+  }
   else
   {
     game.bonus.dead += 1;
-    if ( game.bonus.dead > 50 || game.bonus.y > 500 )
-    {
-      game.bonus = {
-      x: getRandomInt(270),
-      y: -50,
-      dead:0 };
-    }
   }
 
 
@@ -202,8 +197,8 @@ function runGame()
   game.enemies.forEach(checkCollision);
 
   if ( game.bonus.dead == 0 &&
-       game.bonus.x < game.player.x + 15 &&
-       game.bonus.x > game.player.x - 15 &&
+       game.bonus.x < game.player.x + 30 &&
+       game.bonus.x > game.player.x - 30 &&
        game.bonus.y < game.player.y + 15 &&
        game.bonus.y > game.player.y - 15 )
   {
@@ -223,6 +218,14 @@ function runGame()
       y: -50,
       dead:0 };
     game.enemies.push(enemy);
+  }
+
+  if ( game.bonus.dead > 50 || game.bonus.y > 500 )
+  {
+    game.bonus = {
+    x: getRandomInt(270),
+    y: -50,
+    dead:0 };
   }
 
   if ( game.health <= 0 )
@@ -291,7 +294,11 @@ function processInput()
 
 function fireMissile()
 {
-  if (game.stored_missiles <= 0) return;
+  if (game.stored_missiles <= 0) 
+  {
+    log("Out of Missiles!");
+    return;
+  }
   game.stored_missiles -= 1;
   game.missiles.push({x:game.player.x,y:game.player.y-30,dead:0});
 }
@@ -375,10 +382,10 @@ function drawStuff()
       { 
         buffer_ctx.drawImage(explode2_img,game.player.x,game.player.y);
         game.enemies.forEach(enemy => drawEnemy(enemy));
-        buffer_ctx.font="45px Arial";
-        buffer_ctx.fillStyle="#800";
         buffer_ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
         buffer_ctx.fillRect(0, 0, 300, 300);
+        buffer_ctx.font="45px Arial";
+        buffer_ctx.fillStyle="#F00";
         buffer_ctx.fillText("Game Over",10,100);
         buffer_ctx.fillText("Score:"+game.score,10,160);
         buffer_ctx.font="30px Arial";
