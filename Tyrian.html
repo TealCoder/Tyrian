@@ -1,12 +1,15 @@
 
 <html>
   <head>
-    <title>Tyrion</title>
+    <title>Fighter Jet</title>
 
 <meta charset="UTF-8">
 
 <!-- also TODO for phone controls: set the predicted width to 300 (like vote bugger) -->
 <meta name=viewport content='width=300'>
+<link rel="icon"
+      type="image/gif"
+      href="Images/plane.gif">
 
 <script language=javascript>
 
@@ -27,7 +30,7 @@ state:0,
       player:{x:0,y:0},
       enemies:[],
       missiles:[],
-      bonus:{x:500,y:500}
+      bonus:{x:500,y:500,dead:0}
 }
 
 // example:
@@ -180,8 +183,37 @@ function runGame()
     }
   }
 
+  if (game.bonus.dead == 0)
+    game.bonus.y += enemy_speed;
+  else
+  {
+    game.bonus.dead += 1;
+    if ( game.bonus.dead > 50 || game.bonus.y > 500 )
+    {
+      game.bonus = {
+      x: getRandomInt(270),
+      y: -50,
+      dead:0 };
+    }
+  }
+
+
   // Check for collision after dealing with movement.
   game.enemies.forEach(checkCollision);
+
+  if ( game.bonus.dead == 0 &&
+       game.bonus.x < game.player.x + 15 &&
+       game.bonus.x > game.player.x - 15 &&
+       game.bonus.y < game.player.y + 15 &&
+       game.bonus.y > game.player.y - 15 )
+  {
+    game.bonus.dead = 1;
+    game.stored_missiles += 1;
+    game.health          += 10;
+    game.score           += 10;
+  }
+
+
 
   // Create new enemies
   if ( game.enemies.length < Math.log10(game.score + 2) )
@@ -273,6 +305,8 @@ function newGame()
   game.player.y = 270;
 
   game.enemies = []
+  game.missiles = []
+  game.bonus = {x:0,y:0,dead:10}
 }
 
 
@@ -331,6 +365,10 @@ function drawStuff()
         buffer_ctx.drawImage(plane_img,game.player.x,game.player.y);
         game.enemies.forEach(enemy => drawEnemy(enemy));
         game.missiles.forEach(missile => buffer_ctx.drawImage(missile_img,missile.x,missile.y));
+        if ( game.bonus.dead == 0 )
+          buffer_ctx.drawImage(stuff_img,game.bonus.x,game.bonus.y);
+        else if (game.bonus.dead < 3)
+          buffer_ctx.drawImage(sparkle_img,game.bonus.x,game.bonus.y);
         break;
       }
     case 2:
@@ -339,6 +377,8 @@ function drawStuff()
         game.enemies.forEach(enemy => drawEnemy(enemy));
         buffer_ctx.font="45px Arial";
         buffer_ctx.fillStyle="#800";
+        buffer_ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+        buffer_ctx.fillRect(0, 0, 300, 300);
         buffer_ctx.fillText("Game Over",10,100);
         buffer_ctx.fillText("Score:"+game.score,10,160);
         buffer_ctx.font="30px Arial";
