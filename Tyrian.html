@@ -5,7 +5,7 @@
 
 <meta charset="UTF-8">
 
-<!-- also TODO for phone controls: set the predicted width to 300 (like vote bugger) -->
+<!-- TODO: Lock to portrait view -->
 <meta name=viewport content='width=300'>
 <link rel="icon"
       type="image/gif"
@@ -33,7 +33,7 @@ state:0,
       bonus:{x:500,y:500,dead:0}
 }
 
-// example:
+// examples of types in empty lists:
 var enemy = { type:0,x:100,y:-30,dead:0 } 
 var missile = { x:100,y:-30,dead:0 } 
 
@@ -152,8 +152,10 @@ function getRandomInt(max) {
 }
 function runGame()
 {
+  // Only game state 1 has things flying around
   if (game.state != 1) {return;}
 
+  // Handle movement, enemies, missiles, bonus
   game.enemies.forEach(moveEnemy);
   for (var i = 0 ; i < game.enemies.length ; i ++)
   {
@@ -193,7 +195,7 @@ function runGame()
   }
 
 
-  // Check for collision after dealing with movement.
+  // Check for collisions
   game.enemies.forEach(checkCollision);
 
   if ( game.bonus.dead == 0 &&
@@ -208,9 +210,13 @@ function runGame()
     game.score           += 10;
   }
 
+  // Check player death
+  if ( game.health <= 0 )
+  {
+    game.state=2;
+  }
 
-
-  // Create new enemies
+  // Create new enemies and goodies if they've been gone awhile
   if ( game.enemies.length < Math.log10(game.score + 2) )
   {
     enemy = {type:getRandomInt(2),
@@ -228,32 +234,68 @@ function runGame()
     dead:0 };
   }
 
-  if ( game.health <= 0 )
-  {
-    game.state=2;
-  }
-
 }
 
-// Needs work, can't hold keys down.
-// Apearantly I got to lesten for the keydown event,
-//  stash the key, and then don't remove it until key up
-var inputKey = 0;
+// Store keyboard input to be processed once per game loop
+var keyControls = {
+left:false,
+right:false,
+up:false,
+down:false,
+missile:false };
+
 function storeInput(e)
 {
-  //console.log(e)
-  inputKey = e.keyCode;
-  // 32 = space
+  // log(e.keyCode + " down")
+  input = e.keyCode;
   // 65 = a
+  if (input == 65) { keyControls.left=true; }
   // 83 = s
+  if (input == 83) { keyControls.down=true; }
   // 68 = d
+  if (input == 68) { keyControls.right=true; }
   // 87 = w
+  if (input == 87) { keyControls.up=true; }
+  // 32 = space
+  if (input == 32) { keyControls.missile=true; 
+    e.preventDefault(); } // Don't scroll
 }
+
+function clearInput(e)
+{
+  // In case I just want to clear everything
+  if (e === null ) {
+    keyControls = {
+      left:false,
+      right:false,
+      up:false,
+      down:false,
+      missile:false };
+    return;
+  }
+
+  // log(e.keyCode + " up")
+  input = e.keyCode;
+  // 65 = a
+  if (input == 65) { keyControls.left=false; }
+  // 83 = s
+  if (input == 83) { keyControls.down=false; }
+  // 68 = d
+  if (input == 68) { keyControls.right=false; }
+  // 87 = w
+  if (input == 87) { keyControls.up=false; }
+  // 32 = space
+  if (input == 32) { keyControls.missile=false; 
+    e.preventDefault(); } // Don't scroll
+}
+
 window.addEventListener("keydown",storeInput);
+window.addEventListener("keyup",clearInput);
 
 function processInput()
 {
 
+  // Follow the mouse
   if (game.state == 1 && mouseIsDown )
   {
     if (mousePos.x > game.player.x) game.player.x += 10;
@@ -262,27 +304,40 @@ function processInput()
     if (mousePos.y < game.player.y) game.player.y -= 10;
   }
 
-  input = inputKey;
-  inputKey = 0;
-  if ( input == 0 ) { return;}
-
-  if ( game.state == 2 )
+  // Follow wasd
+  if (game.state == 1 )
   {
-    game.state = 0;
+    if (keyControls.left) { game.player.x -= 10; }
+    if (keyControls.down) { game.player.y += 10; }
+    if (keyControls.right) { game.player.x += 10; }
+    if (keyControls.up) { game.player.y -= 10; }
   }
 
-  if ( game.state == 0 )
+  // Space is special key.
+  // Might want to move the mouse handlers of these
+  // events here as well.
+  if (keyControls.missile) 
   {
-    if ( input == 32 ) { newGame() }
-    return;
+    if ( game.state == 2 )
+    {
+      game.state = 0;
+      clearInput(null);
+      return;
+    }
+
+    if ( game.state == 1 )
+    {
+      fireMissile();
+    }
+
+    if ( game.state == 0 )
+    {
+      clearInput(null);
+      newGame();
+      return;
+    }
   }
 
-  // Else game.state == 1
-  if (input == 65) { game.player.x -= 10 }
-  if (input == 83) { game.player.y += 10 }
-  if (input == 68) { game.player.x += 10 }
-  if (input == 87) { game.player.y -= 10 }
-  if (input == 32) { fireMissile() }
 
   // don't let the player fly out of bounds
   if ( game.player.x < 0 ) game.player.x = 0;
@@ -294,6 +349,7 @@ function processInput()
 
 function fireMissile()
 {
+  keyControls.missile = false; // Don't fire a barrage
   if (game.stored_missiles <= 0) 
   {
     log("Out of Missiles!");
@@ -305,6 +361,7 @@ function fireMissile()
 
 function newGame()
 {
+  log("New Game")
   game.state = 1;
   game.health = 100;
   game.stored_missiles = 3;
